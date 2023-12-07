@@ -22,10 +22,8 @@ def run_model():
 	client = bigquery.Client()
 	
 	# Set BigQuery dataset parameters
-	PROJECT_ID = 'playpen-05c7cd'
 	DATASET_ID = 'Vertex'
-	TABLE_ID_VALID = 'EPCValid'
-	TABLE_ID_INVALID = 'EPCInvalid'
+	TABLE_ID = 'EPCClean'
 	
 	# Define SQL queries
 	sql = f"""
