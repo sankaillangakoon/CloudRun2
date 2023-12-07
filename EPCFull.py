@@ -88,10 +88,18 @@ WHERE co2_emissions_current <= 0
   AND Lodgement_Date < '2020-01-01')
 """
 	
-	# Load datasets from BigQuery
+	# Load EPC Valid datasets from BigQuery and create table
 	epc_valid = client.query(sql).result().to_dataframe()
-	epc_invalid = client.query(sql1).result().to_dataframe()
-	
+destination_table = f"{client.project}.{DATASET_ID}.EPCValid"
+payload = client.load_table_from_dataframe(epc_valid, destination_table)
+payload.result()
+
+	# Load EPC Invalid datasets from BigQuery and create table
+epc_invalid = client.query(sql1).result().to_dataframe()
+destination_table1 = f"{client.project}.{DATASET_ID}.EPCInvalid"
+payload1 = client.load_table_from_dataframe(epc_invalid, destination_table1)
+payload1.result()
+
 	# Split datasets into training and validation datasets
 	X = epc_valid.drop(columns=['co2_emissions_current'])
 	y = epc_valid['co2_emissions_current']
