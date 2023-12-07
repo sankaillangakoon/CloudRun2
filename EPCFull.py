@@ -27,76 +27,76 @@ def run_model():
 	
 	# Define SQL queries
 	sql = f"""
-SELECT
-property_type,
-built_form,
-co2_emissions_current,
-total_floor_area,
-main_fuel_rename,
-uprn,
-construction_year,
-mainheat_env_eff,
-hot_water_env_eff,
-floor_env_eff,
-windows_env_eff,
-walls_env_eff,
-roof_env_eff,
-mainheatc_env_eff,
-lighting_env_eff
-FROM
-`{client.project}.{DATASET_ID}.{TABLE_ID}`
-WHERE NOT (co2_emissions_current <= 0
-  OR (mainheat_env_eff = 'N/A'
-  OR hot_water_env_eff = 'N/A'
-  OR floor_env_eff = 'N/A'
-  OR windows_env_eff = 'N/A'
-  OR walls_env_eff = 'N/A'
-  OR roof_env_eff = 'N/A'
-  OR mainheatc_env_eff = 'N/A'
-  OR lighting_env_eff = 'N/A')
-  OR (mainheat_env_eff IN ('Poor', 'Very Poor')
-  AND property_type <> 'Flat'
-  AND current_energy_rating IN ('A', 'B')
-  AND Lodgement_Date < '2020-01-01'))
-"""
+	SELECT
+		property_type,
+		built_form,
+		co2_emissions_current,
+		total_floor_area,
+		main_fuel_rename,
+		uprn,
+		construction_year,
+		mainheat_env_eff,
+		hot_water_env_eff,
+		floor_env_eff,
+		windows_env_eff,
+		walls_env_eff,
+		roof_env_eff,
+		mainheatc_env_eff,
+		lighting_env_eff
+	FROM
+		`{client.project}.{DATASET_ID}.{TABLE_ID}`
+	WHERE NOT (co2_emissions_current <= 0
+	  OR (mainheat_env_eff = 'N/A'
+		  OR hot_water_env_eff = 'N/A'
+		  OR floor_env_eff = 'N/A'
+		  OR windows_env_eff = 'N/A'
+		  OR walls_env_eff = 'N/A'
+		  OR roof_env_eff = 'N/A'
+		  OR mainheatc_env_eff = 'N/A'
+		  OR lighting_env_eff = 'N/A')
+	  OR (mainheat_env_eff IN ('Poor', 'Very Poor')
+		  AND property_type <> 'Flat'
+		  AND current_energy_rating IN ('A', 'B')
+		  AND Lodgement_Date < '2020-01-01'))
+	"""
 
-sql1 = f"""
-SELECT
-property_type,
-built_form,
-co2_emissions_current,
-total_floor_area,
-main_fuel_rename,
-uprn,
-construction_year,
-mainheat_env_eff,
-hot_water_env_eff,
-floor_env_eff,
-windows_env_eff,
-walls_env_eff,
-roof_env_eff,
-mainheatc_env_eff,
-lighting_env_eff
-FROM
-`{client.project}.{DATASET_ID}.{TABLE_ID}`
-WHERE co2_emissions_current <= 0
-  OR (mainheat_env_eff IN ('Poor', 'Very Poor')
-  AND property_type <> 'Flat'
-  AND current_energy_rating IN ('A', 'B')
-  AND Lodgement_Date < '2020-01-01')
-"""
+	sql1 = f"""
+	SELECT
+		property_type,
+		built_form,
+		co2_emissions_current,
+		total_floor_area,
+		main_fuel_rename,
+		uprn,
+		construction_year,
+		mainheat_env_eff,
+		hot_water_env_eff,
+		floor_env_eff,
+		windows_env_eff,
+		walls_env_eff,
+		roof_env_eff,
+		mainheatc_env_eff,
+		lighting_env_eff
+	FROM
+		`{client.project}.{DATASET_ID}.{TABLE_ID}`
+	WHERE co2_emissions_current <= 0
+	  OR (mainheat_env_eff IN ('Poor', 'Very Poor')
+		  AND property_type <> 'Flat'
+		  AND current_energy_rating IN ('A', 'B')
+		  AND Lodgement_Date < '2020-01-01')
+	"""
 	
 	# Load EPC Valid datasets from BigQuery and create table
 	epc_valid = client.query(sql).result().to_dataframe()
-destination_table = f"{client.project}.{DATASET_ID}.EPCValid"
-payload = client.load_table_from_dataframe(epc_valid, destination_table)
-payload.result()
+	destination_table = f"{client.project}.{DATASET_ID}.EPCValid"
+	payload = client.load_table_from_dataframe(epc_valid, destination_table)
+	payload.result()
 
 	# Load EPC Invalid datasets from BigQuery and create table
-epc_invalid = client.query(sql1).result().to_dataframe()
-destination_table1 = f"{client.project}.{DATASET_ID}.EPCInvalid"
-payload1 = client.load_table_from_dataframe(epc_invalid, destination_table1)
-payload1.result()
+	epc_invalid = client.query(sql1).result().to_dataframe()
+	destination_table1 = f"{client.project}.{DATASET_ID}.EPCInvalid"
+	payload1 = client.load_table_from_dataframe(epc_invalid, destination_table1)
+	payload1.result()
 
 	# Split datasets into training and validation datasets
 	X = epc_valid.drop(columns=['co2_emissions_current'])
