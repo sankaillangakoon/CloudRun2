@@ -175,7 +175,7 @@ def run_model():
 
     # Export MSE and R2 to BigQuery
     EPCValidation_table = "Vertex.EPCEvaluation"
-    job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND, autodetect=True)
+    job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_EMPTY, autodetect=True)
     EPCValidationpayload = client.load_table_from_dataframe(scores_df, EPCValidation_table, job_config=job_config)
     EPCValidationpayload.result()
 
@@ -185,7 +185,7 @@ def run_model():
 
     # Export predictions to BigQuery
     ml_table = "Vertex.EPCInvalidFixed1"
-    mlpayload = client.load_table_from_dataframe(epc_invalid, ml_table)
+    mlpayload = client.load_table_from_dataframe(epc_invalid, ml_table, job_config=job_config)
     mlpayload.result()
 
     # Return a response
