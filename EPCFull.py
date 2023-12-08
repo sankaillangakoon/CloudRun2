@@ -99,7 +99,7 @@ def create_and_load_bigquery_tables(client, dataset_id, source_table):
     EPCInvalid_table = f"{client.project}.{dataset_id}.EPCInvalid"
     client.load_table_from_dataframe(epc_invalid, EPCInvalid_table).result()
 
-    return epc_valid, epc_invalid
+return epc_valid, epc_invalid
 
 @app.route('/run-model', methods=['POST'])
 def run_model():
