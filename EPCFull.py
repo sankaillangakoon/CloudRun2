@@ -26,14 +26,15 @@ def table_exists(client, dataset_id, table_name):
         return False
 
 # Function to create and load initial BigQuery tables
-def create_and_load_bigquery_tables():
+def create_and_load_bigquery_tables(client, dataset_id):
     # create and load EPCValid and EPCInvalid tables
-	destination_table = f"{client.project}.{DATASET_ID}.EPCValid"
-	payload = client.load_table_from_dataframe(epc_valid, destination_table)
-	payload.result()
-	destination_table1 = f"{client.project}.{DATASET_ID}.EPCInvalid"
-	payload1 = client.load_table_from_dataframe(epc_invalid, destination_table1)
-	payload1.result()
+	EPCValid_table = f"{client.project}.{DATASET_ID}.EPCValid"
+	EPCValidpayload = client.load_table_from_dataframe(epc_valid, EPCValid_table)
+	EPCValidpayload.result()
+	
+	EPCInvalid_table = f"{client.project}.{DATASET_ID}.EPCInvalid"
+	EPCInvalidpayload = client.load_table_from_dataframe(epc_invalid, EPCInvalid_table)
+	EPCInvalidpayload.result()
     pass
 
 @app.route('/run-model', methods=['POST'])
@@ -47,7 +48,7 @@ def run_model():
 	source_table = 'EPCClean'
 
 	# Check if any required table does not exist and create/load them
-    if any(not table_exists(client, dataset_id, table) for table in required_tables):
+    	if any(not table_exists(client, dataset_id, table) for table in required_tables):
         create_and_load_bigquery_tables()
 	
 	# Define SQL queries
@@ -176,19 +177,19 @@ def run_model():
 	})
 	
 	# Export MSE and R2 to BigQuery
-	destination_table1 = "Vertex.EPCEvaluation"
+	EPCValidation_table = "Vertex.EPCEvaluation"
 	job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND, autodetect=True)
-	payload1 = client.load_table_from_dataframe(scores_df, destination_table1, job_config=job_config)
-	payload1.result()
+	EPCValidationpayload = client.load_table_from_dataframe(scores_df, EPCValidation_table, job_config=job_config)
+	EPCValidationpayload.result()
 	
 	# Predict on EPC Invalid
 	epc_invalid_transformed = preprocessor.transform(epc_invalid.drop(columns=['co2_emissions_current']))
 	epc_invalid['co2_emissions_predicted'] = best_rf.predict(epc_invalid_transformed)
 	
 	# Export predictions to BigQuery
-	destination_table = "Vertex.EPCInvalidFixed1"
-	payload = client.load_table_from_dataframe(epc_invalid, destination_table)
-	payload.result()
+	ml_table = "Vertex.EPCInvalidFixed1"
+	mlpayload = client.load_table_from_dataframe(epc_invalid, ml_table)
+	mlpayload.result()
 	
 	# Return a response
 	return jsonify({"message": "ML model execution complete", "MSE": mse, "R2_Score": r2})
