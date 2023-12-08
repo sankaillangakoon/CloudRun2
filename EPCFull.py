@@ -1,5 +1,6 @@
 # Import necessary libraries
 from flask import Flask, jsonify
+from google.cloud.exceptions import NotFound
 from google.cloud import bigquery
 import numpy as np
 import pandas as pd
@@ -15,15 +16,39 @@ from scipy.stats import randint
 
 app = Flask(__name__)
 
+# Function to check if a table exists in BigQuery
+def table_exists(client, dataset_id, table_name):
+    table_id = f"{client.project}.{dataset_id}.{table_name}"
+    try:
+        client.get_table(table_id)
+        return True
+    except NotFound:
+        return False
+
+# Function to create and load initial BigQuery tables
+def create_and_load_bigquery_tables():
+    # create and load EPCValid and EPCInvalid tables
+	destination_table = f"{client.project}.{DATASET_ID}.EPCValid"
+	payload = client.load_table_from_dataframe(epc_valid, destination_table)
+	payload.result()
+	destination_table1 = f"{client.project}.{DATASET_ID}.EPCInvalid"
+	payload1 = client.load_table_from_dataframe(epc_invalid, destination_table1)
+	payload1.result()
+    pass
+
 @app.route('/run-model', methods=['POST'])
 def run_model():
-
 	# Initialize BigQuery client
 	client = bigquery.Client()
 	
 	# Set BigQuery dataset parameters
-	DATASET_ID = 'Vertex'
-	TABLE_ID = 'EPCClean'
+	dataset_id = 'Vertex'
+	required_tables = ['EPCValid', 'EPCInvalid', 'EPCEvaluation', 'EPCInvalidFixed1']
+	source_table = 'EPCClean'
+
+	# Check if any required table does not exist and create/load them
+    if any(not table_exists(client, dataset_id, table) for table in required_tables):
+        create_and_load_bigquery_tables()
 	
 	# Define SQL queries
 	sql = f"""
@@ -44,7 +69,7 @@ def run_model():
 		mainheatc_env_eff,
 		lighting_env_eff
 	FROM
-		`{client.project}.{DATASET_ID}.{TABLE_ID}`
+		`{client.project}.{dataset_id}.{source_table}`
 	WHERE NOT (co2_emissions_current <= 0
 	  OR (mainheat_env_eff = 'N/A'
 		  OR hot_water_env_eff = 'N/A'
@@ -78,25 +103,17 @@ def run_model():
 		mainheatc_env_eff,
 		lighting_env_eff
 	FROM
-		`{client.project}.{DATASET_ID}.{TABLE_ID}`
+		`{client.project}.{dataset_id}.{source_table}`
 	WHERE co2_emissions_current <= 0
 	  OR (mainheat_env_eff IN ('Poor', 'Very Poor')
 		  AND property_type <> 'Flat'
 		  AND current_energy_rating IN ('A', 'B')
 		  AND Lodgement_Date < '2020-01-01')
 	"""
-	
-	# Load EPC Valid datasets from BigQuery and create table
-	epc_valid = client.query(sql).result().to_dataframe()
-	destination_table = f"{client.project}.{DATASET_ID}.EPCValid"
-	payload = client.load_table_from_dataframe(epc_valid, destination_table)
-	payload.result()
 
-	# Load EPC Invalid datasets from BigQuery and create table
+	# Run SQL queries and load data into pandas DataFrame
+	epc_valid = client.query(sql).result().to_dataframe()
 	epc_invalid = client.query(sql1).result().to_dataframe()
-	destination_table1 = f"{client.project}.{DATASET_ID}.EPCInvalid"
-	payload1 = client.load_table_from_dataframe(epc_invalid, destination_table1)
-	payload1.result()
 
 	# Split datasets into training and validation datasets
 	X = epc_valid.drop(columns=['co2_emissions_current'])
