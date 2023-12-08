@@ -26,7 +26,7 @@ def table_exists(client, dataset_id, table_name):
         return False
 
 # Function to create and load initial BigQuery tables
-def create_and_load_bigquery_tables(client, dataset_id, epc_valid, epc_invalid):
+def create_and_load_bigquery_tables(client, dataset_id, source_table):
 	# Define SQL queries
 	sql = f"""
 	SELECT
@@ -103,16 +103,14 @@ def create_and_load_bigquery_tables(client, dataset_id, epc_valid, epc_invalid):
 
 @app.route('/run-model', methods=['POST'])
 def run_model():
-	# Initialize BigQuery client
+	# Initialize BigQuery client and set parameters
 	client = bigquery.Client()
-	
-	# Set BigQuery dataset parameters
 	dataset_id = 'Vertex'
-	required_tables = ['EPCValid', 'EPCInvalid', 'EPCEvaluation', 'EPCInvalidFixed1']
 	source_table = 'EPCClean'
+	required_tables = ['EPCValid', 'EPCInvalid', 'EPCEvaluation', 'EPCInvalidFixed1']
 
 	# Check if any required table does not exist and create/load them
-	if any(not table_exists(client, dataset_id, table) for table in required_tables):
+    if any(not table_exists(client, dataset_id, table) for table in required_tables):
         epc_valid, epc_invalid = create_and_load_bigquery_tables(client, dataset_id, source_table)
 
 	# Split datasets into training and validation datasets
