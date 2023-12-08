@@ -113,7 +113,7 @@ def run_model():
 
 	# Check if any required table does not exist and create/load them
 	if any(not table_exists(client, dataset_id, table) for table in required_tables):
-        	epc_valid, epc_invalid = create_and_load_bigquery_tables(client, dataset_id, source_table)
+        epc_valid, epc_invalid = create_and_load_bigquery_tables(client, dataset_id, source_table)
 
 	# Split datasets into training and validation datasets
 	X = epc_valid.drop(columns=['co2_emissions_current'])
