@@ -94,10 +94,11 @@ def create_and_load_bigquery_tables(client, dataset_id, source_table):
 
     # Load data into BigQuery tables
     EPCValid_table = f"{client.project}.{dataset_id}.EPCValid"
-    client.load_table_from_dataframe(epc_valid, EPCValid_table).result()
+    job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_EMPTY, autodetect=True)
+    client.load_table_from_dataframe(epc_valid, EPCValid_table, job_config=job_config).result()
 
     EPCInvalid_table = f"{client.project}.{dataset_id}.EPCInvalid"
-    client.load_table_from_dataframe(epc_invalid, EPCInvalid_table).result()
+    client.load_table_from_dataframe(epc_invalid, EPCInvalid_table, job_config=job_config).result()
 
     return epc_valid, epc_invalid
 
